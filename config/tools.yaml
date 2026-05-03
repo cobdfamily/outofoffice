@@ -23,6 +23,13 @@
 # bytes / extension -- no need to declare it in the route.
 # Cross-application conversions (e.g. .docx -> .xlsx) will fail
 # at LibreOffice with a non-zero exit; common-sense applies.
+#
+# The list of supported target formats lives in
+# config/formats.yaml (the canonical catalog). This file's
+# /to/<ext> endpoints are checked against it by tests in CI.
+# /formats serves the catalog (converted to JSON on the wire
+# by bin/cat-yaml-as-json) so consumers can discover supported
+# extensions without reading the README.
 
 api:
   title: outofoffice
@@ -32,6 +39,30 @@ logging:
   level: INFO
 
 endpoints:
+
+  # ====================================================================
+  # /formats -- discovery: the format catalog
+  # ====================================================================
+
+  - name: formats
+    route: /formats
+    method: GET
+    description: >-
+      Return the curated catalog of supported export formats.
+      Each entry is a {ext, name, family} object; pass the
+      `ext` field as the path suffix on /to/<ext> to convert
+      to that format.
+    command:
+      # The catalog is authored as YAML (config/formats.yaml)
+      # so operators can edit with comments. cat-yaml-as-json
+      # converts to a JSON document on stdout; url2code's
+      # native_json mode then parses it into `parsed_output`.
+      executable: /app/bin/cat-yaml-as-json
+      args:
+        - "/app/config/formats.yaml"
+      timeout_seconds: 5
+    output:
+      mode: native_json
 
   # ====================================================================
   # word processing / text

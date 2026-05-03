@@ -73,6 +73,32 @@ def test_liveness_returns_outofoffice_service():
 
 
 # ---------------------------------------------------------------------------
+# /formats — discovery
+# ---------------------------------------------------------------------------
+
+
+def test_formats_returns_curated_catalog():
+    """GET /formats returns the catalog as parsed_output:
+    a list of {ext, name, family} entries. Without it
+    consumers can't discover supported extensions without
+    reading the README."""
+    r = requests.get(OUTOFOFFICE_BASE_URL + "/formats", timeout=5)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    catalog = body.get("parsed_output")
+    assert isinstance(catalog, list)
+    assert len(catalog) >= 1
+    for entry in catalog:
+        assert {"ext", "name", "family"} <= set(entry.keys())
+    # Every format used by the conversion tests below must
+    # be in the catalog -- otherwise the endpoint shouldn't
+    # exist and we'd get a 404 in those tests instead.
+    exts = [e["ext"] for e in catalog]
+    for ext in ("pdf", "html", "odt", "docx"):
+        assert ext in exts, f"catalog missing {ext!r}"
+
+
+# ---------------------------------------------------------------------------
 # round-trip: upload -> convert -> fetch the converted bytes
 # ---------------------------------------------------------------------------
 

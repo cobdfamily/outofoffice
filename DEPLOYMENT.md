@@ -113,6 +113,10 @@ curl -fsS https://convert.cobd.ca/
 
 # Generated OpenAPI docs at /docs and /redocs.
 
+# Discover supported formats:
+curl -fsS https://convert.cobd.ca/formats \
+  | jq '.parsed_output[].ext'
+
 # Convert a Word document to PDF:
 curl -fsS -X POST \
   -F document=@./report.docx \
@@ -141,13 +145,27 @@ docker compose up -d --no-deps outofoffice
 
 ### Adding a target format
 
-1. Add the format's extension to `EXPECTED_FORMATS` in
-   `tests/test_config.py`.
-2. Add the matching endpoint to `config/tools.yaml`
-   (copy any existing block, change the route, suffix,
-   and the third command arg).
-3. `pytest tests/test_config.py` to confirm.
-4. Tag a release.
+Two-step edit:
+
+1. **Add the entry to `config/formats.yaml`** with
+   `{ext, name, family}`. The catalog is the canonical
+   source of truth and is served at `/formats`.
+
+   ```yaml
+   - ext: webp2
+     name: WebP 2
+     family: image
+   ```
+
+2. **Add the matching endpoint block to
+   `config/tools.yaml`.** Copy any existing block of the
+   same family, change the route to `/to/<ext>`, the
+   `suffix` to `.<ext>`, and the third command arg to
+   `<ext>`.
+
+CI fails fast if (1) and (2) drift -- `test_config.py`
+asserts every catalog `ext` has a matching `/to/<ext>`
+endpoint with consistent suffix and command arg.
 
 The bin/soffice-convert wrapper is format-agnostic — it
 forwards whatever extension you pass to LibreOffice's

@@ -1,0 +1,214 @@
+# Curated catalog of LibreOffice export formats outofoffice
+# exposes.
+#
+# This file is the canonical source of truth for the format
+# list. tools.yaml's per-format /to/<ext> endpoints are
+# checked against it by tests in CI -- editing the catalog
+# without updating the YAML (or vice versa) fails before
+# merge.
+#
+# /formats serves this file (converted to JSON on the wire by
+# bin/cat-yaml-as-json) so consumers can discover supported
+# extensions without reading the README.
+#
+# Per-entry fields:
+#   ext     URL-safe extension; becomes the route suffix
+#           (/to/<ext>) and the on-disk extension on the
+#           generated download URL.
+#   name    Human-readable label (for clients).
+#   family  Grouping for documentation + per-family
+#           timeouts in tools.yaml. One of:
+#             text     word-processing / text formats
+#             sheet    spreadsheet formats
+#             slides   presentation formats
+#             drawing  vector / drawing formats
+#             image    raster image formats
+#             other    markup, postscript, latex
+#
+# Adding a format:
+#   1. Add an entry below.
+#   2. Add the matching `to-<ext>` endpoint block to
+#      tools.yaml (copy any existing block, change the
+#      route, suffix, and the third command arg to the
+#      new ext).
+# CI fails fast if (1) and (2) drift.
+
+# ===== text / word processing =====
+
+- ext: pdf
+  name: PDF (Portable Document Format)
+  family: text
+
+- ext: docx
+  name: Microsoft Word OOXML
+  family: text
+
+- ext: doc
+  name: Microsoft Word legacy
+  family: text
+
+- ext: odt
+  name: OpenDocument Text
+  family: text
+
+- ext: fodt
+  name: OpenDocument Text Flat XML
+  family: text
+
+- ext: ott
+  name: OpenDocument Text template
+  family: text
+
+- ext: rtf
+  name: Rich Text Format
+  family: text
+
+- ext: txt
+  name: Plain text (UTF-8)
+  family: text
+
+- ext: html
+  name: HTML
+  family: text
+
+- ext: xhtml
+  name: XHTML
+  family: text
+
+- ext: epub
+  name: EPUB
+  family: text
+
+- ext: uot
+  name: Unified Office Format Text
+  family: text
+
+# ===== spreadsheet =====
+
+- ext: xlsx
+  name: Microsoft Excel OOXML
+  family: sheet
+
+- ext: xls
+  name: Microsoft Excel legacy
+  family: sheet
+
+- ext: ods
+  name: OpenDocument Spreadsheet
+  family: sheet
+
+- ext: fods
+  name: OpenDocument Spreadsheet Flat XML
+  family: sheet
+
+- ext: ots
+  name: OpenDocument Spreadsheet template
+  family: sheet
+
+- ext: csv
+  name: Comma Separated Values
+  family: sheet
+
+- ext: dbf
+  name: dBase database
+  family: sheet
+
+- ext: dif
+  name: Data Interchange Format
+  family: sheet
+
+- ext: slk
+  name: SYLK / Symbolic Link
+  family: sheet
+
+# ===== presentation (slow path; per-family timeout 120s) =====
+
+- ext: pptx
+  name: Microsoft PowerPoint OOXML
+  family: slides
+
+- ext: ppt
+  name: Microsoft PowerPoint legacy
+  family: slides
+
+- ext: odp
+  name: OpenDocument Presentation
+  family: slides
+
+- ext: fodp
+  name: OpenDocument Presentation Flat XML
+  family: slides
+
+- ext: otp
+  name: OpenDocument Presentation template
+  family: slides
+
+# ===== drawing / vector =====
+
+- ext: odg
+  name: OpenDocument Drawing
+  family: drawing
+
+- ext: fodg
+  name: OpenDocument Drawing Flat XML
+  family: drawing
+
+- ext: otg
+  name: OpenDocument Drawing template
+  family: drawing
+
+- ext: svg
+  name: Scalable Vector Graphics
+  family: drawing
+
+- ext: emf
+  name: Enhanced Metafile
+  family: drawing
+
+- ext: wmf
+  name: Windows Metafile
+  family: drawing
+
+# ===== raster image =====
+
+- ext: png
+  name: Portable Network Graphics
+  family: image
+
+- ext: jpg
+  name: JPEG
+  family: image
+
+- ext: gif
+  name: GIF
+  family: image
+
+- ext: bmp
+  name: Bitmap
+  family: image
+
+- ext: tiff
+  name: Tagged Image File Format
+  family: image
+
+- ext: webp
+  name: WebP
+  family: image
+
+# ===== markup / other =====
+
+- ext: mml
+  name: MathML
+  family: other
+
+- ext: ps
+  name: PostScript
+  family: other
+
+- ext: eps
+  name: Encapsulated PostScript
+  family: other
+
+- ext: ltx
+  name: LaTeX
+  family: other

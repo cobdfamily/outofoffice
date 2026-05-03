@@ -16,27 +16,21 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG = REPO_ROOT / "config" / "tools.yaml"
+FORMATS_YAML = REPO_ROOT / "config" / "formats.yaml"
 
-# The full set of LibreOffice export filters outofoffice
-# exposes. Adding a format means: extend this list AND add
-# the matching endpoint to tools.yaml. Removing one means
-# both. Drift between the two is what this test pins.
-EXPECTED_FORMATS = [
-    # text
-    "pdf", "docx", "doc", "odt", "fodt", "ott",
-    "rtf", "txt", "html", "xhtml", "epub", "uot",
-    # spreadsheet
-    "xlsx", "xls", "ods", "fods", "ots",
-    "csv", "dbf", "dif", "slk",
-    # presentation
-    "pptx", "ppt", "odp", "fodp", "otp",
-    # drawing
-    "odg", "fodg", "otg", "svg", "emf", "wmf",
-    # raster image
-    "png", "jpg", "gif", "bmp", "tiff", "webp",
-    # other
-    "mml", "ps", "eps", "ltx",
-]
+
+def _load_catalog():
+    return yaml.safe_load(FORMATS_YAML.read_text())
+
+
+# The list of formats outofoffice exposes is sourced from
+# config/formats.yaml (the canonical catalog). EXPECTED_FORMATS
+# is derived at import time so adding an entry to the catalog
+# automatically propagates here -- the per-format /to/<ext>
+# endpoints in tools.yaml are then verified against the
+# catalog by tests below, catching drift before it ships.
+EXPECTED_FORMATS = [c["ext"] for c in _load_catalog()]
+VALID_FAMILIES = {"text", "sheet", "slides", "drawing", "image", "other"}
 
 
 @pytest.fixture(scope="module")
@@ -47,6 +41,21 @@ def cfg():
 @pytest.fixture(scope="module")
 def endpoints(cfg):
     return cfg["endpoints"]
+
+
+@pytest.fixture(scope="module")
+def convert_endpoints(endpoints):
+    """Just the format-conversion endpoints (/to/<ext>).
+    Excludes the /formats discovery endpoint, which has a
+    fundamentally different shape (GET, no upload, runs
+    cat-yaml-as-json instead of soffice-convert) and would
+    fail every "every endpoint must..." assertion below."""
+    return [e for e in endpoints if e["name"] != "formats"]
+
+
+@pytest.fixture(scope="module")
+def catalog():
+    return _load_catalog()
 
 
 # ---------------------------------------------------------------------------
@@ -69,22 +78,23 @@ def test_top_level_metadata(cfg):
 
 
 def test_no_unexpected_endpoints(endpoints):
-    """No admin or auxiliary endpoints — the surface is
-    exactly one route per export format. If a future edit
-    adds something unexpected, surface it here."""
+    """The surface is exactly one route per export format
+    plus the /formats discovery endpoint. If a future edit
+    adds something else, surface it here."""
     routes = {e["route"] for e in endpoints}
     expected_routes = {f"/to/{ext}" for ext in EXPECTED_FORMATS}
+    expected_routes.add("/formats")
     extra = routes - expected_routes
     missing = expected_routes - routes
     assert not extra, f"unexpected routes: {sorted(extra)}"
     assert not missing, f"missing routes: {sorted(missing)}"
 
 
-def test_endpoint_count_matches_format_catalog(endpoints):
-    """The number of endpoints must equal the number of
-    formats EXPECTED_FORMATS pins. Drift here means either
-    the YAML or the catalog needs updating."""
-    assert len(endpoints) == len(EXPECTED_FORMATS)
+def test_endpoint_count_matches_format_catalog(convert_endpoints):
+    """Number of /to/<ext> endpoints must equal the number
+    of catalog entries. Drift here means either the YAML or
+    the catalog needs updating."""
+    assert len(convert_endpoints) == len(EXPECTED_FORMATS)
 
 
 def test_routes_are_unique(endpoints):
@@ -102,22 +112,21 @@ def test_endpoint_names_are_unique(endpoints):
 # ---------------------------------------------------------------------------
 
 
-def test_every_endpoint_calls_soffice_convert(endpoints):
+def test_every_convert_endpoint_calls_soffice_convert(convert_endpoints):
     """The wrapper at /app/bin/soffice-convert is the only
-    binary outofoffice runs. Catching a stray executable
-    here means the container never has to find out at
-    request time."""
-    for e in endpoints:
+    binary the conversion endpoints run. (/formats uses
+    cat-yaml-as-json and is excluded.)"""
+    for e in convert_endpoints:
         assert e["command"]["executable"] == "/app/bin/soffice-convert", \
             f"{e['name']} uses unexpected executable"
 
 
-def test_every_endpoint_passes_three_args(endpoints):
+def test_every_convert_endpoint_passes_three_args(convert_endpoints):
     """The wrapper takes exactly three args:
     ``<input_path> <output_path> <target_format>``. A missing
     or swapped arg would fail at request time — pin the
     arg-count and order here."""
-    for e in endpoints:
+    for e in convert_endpoints:
         args = e["command"]["args"]
         assert len(args) == 3, \
             f"{e['name']} passes {len(args)} args, expected 3"
@@ -127,25 +136,25 @@ def test_every_endpoint_passes_three_args(endpoints):
             f"{e['name']} arg 1 must be the output placeholder"
 
 
-def test_format_arg_matches_route(endpoints):
+def test_format_arg_matches_route(convert_endpoints):
     """The third wrapper arg is the target format (e.g.
     ``pdf``); it must match the trailing path component of
     the route. If they drift, /to/pdf would silently emit a
     .docx (or vice versa)."""
-    for e in endpoints:
+    for e in convert_endpoints:
         route_format = e["route"].rsplit("/", 1)[-1]
         arg_format = e["command"]["args"][2]
         assert arg_format == route_format, \
             f"{e['name']} route says {route_format!r} but arg says {arg_format!r}"
 
 
-def test_every_endpoint_has_a_timeout(endpoints):
+def test_every_convert_endpoint_has_a_timeout(convert_endpoints):
     """LibreOffice can hang on malformed input. A missing
     timeout means the request would block forever; url2code
     inherits a default but pinning it here keeps drifts
     obvious. 30s is too low — even simple conversions can
     spend that on the first soffice cold-start."""
-    for e in endpoints:
+    for e in convert_endpoints:
         timeout = e["command"].get("timeout_seconds")
         assert timeout is not None, f"{e['name']} missing timeout"
         assert timeout >= 60, \
@@ -157,11 +166,12 @@ def test_every_endpoint_has_a_timeout(endpoints):
 # ---------------------------------------------------------------------------
 
 
-def test_every_endpoint_has_one_document_upload(endpoints):
+def test_every_convert_endpoint_has_one_document_upload(convert_endpoints):
     """Clients shouldn't have to remember a different field
     name per endpoint. ``document`` is the convention; pin
-    it across the surface."""
-    for e in endpoints:
+    it across the conversion surface. (/formats takes no
+    upload and is excluded.)"""
+    for e in convert_endpoints:
         uploads = e.get("uploads") or []
         assert len(uploads) == 1, \
             f"{e['name']} has {len(uploads)} uploads, expected 1"
@@ -170,8 +180,8 @@ def test_every_endpoint_has_one_document_upload(endpoints):
         assert upload["placeholder"] == "input_path"
 
 
-def test_input_placeholder_is_substituted(endpoints):
-    for e in endpoints:
+def test_input_placeholder_is_substituted(convert_endpoints):
+    for e in convert_endpoints:
         assert "{input_path}" in e["command"]["args"], \
             f"{e['name']} missing {{input_path}} arg"
 
@@ -181,11 +191,12 @@ def test_input_placeholder_is_substituted(endpoints):
 # ---------------------------------------------------------------------------
 
 
-def test_every_endpoint_declares_one_output_file(endpoints):
+def test_every_convert_endpoint_declares_one_output_file(convert_endpoints):
     """url2code generates a download URL only for declared
     output_files; without one, callers get JSON metadata but
-    no way to fetch the converted bytes."""
-    for e in endpoints:
+    no way to fetch the converted bytes. (/formats has no
+    output_files and is excluded.)"""
+    for e in convert_endpoints:
         outputs = e.get("output_files") or []
         assert len(outputs) == 1, \
             f"{e['name']} has {len(outputs)} output_files, expected 1"
@@ -194,23 +205,23 @@ def test_every_endpoint_declares_one_output_file(endpoints):
         assert out["filename_placeholder"] == "output_filename"
 
 
-def test_output_suffix_matches_route(endpoints):
+def test_output_suffix_matches_route(convert_endpoints):
     """The output_files.suffix becomes the file extension on
     the generated download URL. It must match the route's
     target format so consumers downloading from /to/pdf get
     a file ending in ``.pdf``."""
-    for e in endpoints:
+    for e in convert_endpoints:
         route_format = e["route"].rsplit("/", 1)[-1]
         suffix = e["output_files"][0]["suffix"]
         assert suffix == f".{route_format}", \
             f"{e['name']} suffix {suffix!r} != .{route_format}"
 
 
-def test_output_placeholder_is_substituted(endpoints):
+def test_output_placeholder_is_substituted(convert_endpoints):
     """The output path is materialized by url2code before
     the wrapper runs. Without the placeholder the wrapper
     would try to write to the literal string."""
-    for e in endpoints:
+    for e in convert_endpoints:
         assert "{output_path}" in e["command"]["args"], \
             f"{e['name']} missing {{output_path}} arg"
 
@@ -220,13 +231,88 @@ def test_output_placeholder_is_substituted(endpoints):
 # ---------------------------------------------------------------------------
 
 
-def test_every_endpoint_uses_text_output_mode(endpoints):
+def test_every_convert_endpoint_uses_text_output_mode(convert_endpoints):
     """The wrapper writes a single ``wrote <path>`` line on
     success and surfaces soffice errors on failure. There's
     no structured output for url2code to parse — text mode
     captures the line and trusts the exit code; the
     download_url in the JSON response is the actual
-    deliverable."""
-    for e in endpoints:
+    deliverable. (/formats uses native_json and is
+    excluded.)"""
+    for e in convert_endpoints:
         assert e["output"]["mode"] == "text", \
             f"{e['name']} must use text output mode"
+
+
+# ---------------------------------------------------------------------------
+# formats.yaml -- the canonical catalog
+# ---------------------------------------------------------------------------
+
+
+def test_catalog_parses(catalog):
+    """formats.yaml must be a list of {ext, name, family}
+    objects. Anything else and the YAML <-> catalog
+    consistency tests above silently break."""
+    assert isinstance(catalog, list)
+    assert len(catalog) >= 1
+    required = {"ext", "name", "family"}
+    for entry in catalog:
+        assert isinstance(entry, dict)
+        assert required <= set(entry.keys()), \
+            f"entry {entry!r} missing keys {required - set(entry.keys())}"
+
+
+def test_catalog_exts_are_unique(catalog):
+    exts = [e["ext"] for e in catalog]
+    assert len(exts) == len(set(exts)), \
+        f"duplicate exts: {sorted(exts)}"
+
+
+def test_catalog_exts_are_url_safe(catalog):
+    """ext becomes the trailing path component of /to/<ext>.
+    Letters and digits only; not empty."""
+    import re
+    pattern = re.compile(r"^[a-z0-9]+$")
+    for entry in catalog:
+        assert pattern.match(entry["ext"]), \
+            f"ext {entry['ext']!r} is not URL-safe"
+
+
+def test_catalog_family_is_known(catalog):
+    """family drives per-family timeouts in tools.yaml and
+    documentation grouping. Limit to the documented set."""
+    for entry in catalog:
+        assert entry["family"] in VALID_FAMILIES, \
+            f"ext {entry['ext']!r} has unknown family " \
+            f"{entry['family']!r}"
+
+
+# ---------------------------------------------------------------------------
+# /formats -- discovery endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_formats_endpoint_is_get(endpoints):
+    """Discovery is parameter-less and read-only -- GET is
+    the honest verb. POST is the default in url2code for
+    tool invocations; this is the exception."""
+    e = next(e for e in endpoints if e["name"] == "formats")
+    assert e["method"] == "GET"
+
+
+def test_formats_endpoint_returns_native_json(endpoints):
+    """/formats wraps cat-yaml-as-json over the catalog so
+    the response's `parsed_output` is the catalog directly.
+    text mode would force callers to re-parse."""
+    e = next(e for e in endpoints if e["name"] == "formats")
+    assert e["output"]["mode"] == "native_json"
+
+
+def test_formats_endpoint_reads_catalog_file(endpoints):
+    """The endpoint runs cat-yaml-as-json on the YAML
+    catalog. Pinning the wrapper path also catches a stray
+    refactor that switches to /bin/cat (which would emit
+    raw YAML and break native_json parsing)."""
+    e = next(e for e in endpoints if e["name"] == "formats")
+    assert e["command"]["executable"] == "/app/bin/cat-yaml-as-json"
+    assert e["command"]["args"] == ["/app/config/formats.yaml"]

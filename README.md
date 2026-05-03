@@ -15,13 +15,18 @@ outofoffice's image is built on top of.
 ## What it does
 
 One route per supported target format, all under
-`/to/<ext>`:
+`/to/<ext>`, plus a discovery endpoint:
 
 ```
 POST /to/<ext>
    body:    multipart/form-data, field `document` = the input file
    returns: JSON with output_files.output_path.download_url
             -> GET that URL to retrieve the converted bytes
+
+GET /formats
+   Return the curated catalog of supported export formats.
+   Use the `ext` field of any entry as the path suffix on
+   /to/<ext>.
 ```
 
 The source format is detected by LibreOffice from the
@@ -33,7 +38,10 @@ sense.
 
 ### Supported target formats
 
-42 endpoints, grouped by family:
+The catalog lives in
+[`config/formats.yaml`](config/formats.yaml) and is served
+at `/formats` (converted to JSON on the wire by
+`bin/cat-yaml-as-json`). 42 entries, grouped by family:
 
 - **Word processing / text** (12): `pdf`, `docx`, `doc`,
   `odt`, `fodt`, `ott`, `rtf`, `txt`, `html`, `xhtml`,
@@ -49,9 +57,13 @@ sense.
 - **Markup / other** (4): `mml`, `ps`, `eps`, `ltx`
 
 The full surface is enumerated in
-[`config/tools.yaml`](config/tools.yaml). Every endpoint
-has the same shape: one `document` upload, one converted
-output file, a download URL on the response.
+[`config/tools.yaml`](config/tools.yaml). Every conversion
+endpoint has the same shape: one `document` upload, one
+converted output file, a download URL on the response.
+
+Adding a format is a `formats.yaml` edit + a
+`tools.yaml` edit (one new endpoint block, copying any
+existing one). CI fails fast if the two drift.
 
 ## Quick start
 
@@ -117,10 +129,12 @@ headlessly. Each request:
 
 ```
 config/tools.yaml             # the entire HTTP surface
+config/formats.yaml           # canonical format catalog
 bin/soffice-convert           # shell wrapper (3 quirks of soffice)
+bin/cat-yaml-as-json          # YAML -> JSON for /formats
 Dockerfile                    # url2code base + LibreOffice
 docker-compose.yaml           # local-dev / production-shape compose
-tests/test_config.py          # YAML structural tests
+tests/test_config.py          # YAML + catalog structural tests
 tests/test_e2e.py             # docker-compose round-trip tests
 .github/workflows/test.yml    # CI: yaml + e2e jobs (+ nightly)
 .github/workflows/release.yml # CI: tag-driven multi-arch build/push

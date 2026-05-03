@@ -42,10 +42,14 @@ RUN mkdir -p /tmp/outofoffice/uploads /tmp/outofoffice/outputs \
 # to /app/config/tools.yaml.
 COPY --chown=url2code:url2code config /app/config
 
-# Wrapper script that bridges three soffice / url2code
-# quirks (see bin/soffice-convert for the inline rationale).
+# Wrapper scripts:
+#   bin/soffice-convert     bridges three soffice / url2code
+#                           quirks (see header comment).
+#   bin/cat-yaml-as-json    converts a YAML catalog to JSON
+#                           on stdout for the /formats
+#                           discovery endpoint.
 COPY --chown=url2code:url2code bin /app/bin
-RUN chmod 0755 /app/bin/soffice-convert
+RUN chmod 0755 /app/bin/soffice-convert /app/bin/cat-yaml-as-json
 
 USER url2code
 
