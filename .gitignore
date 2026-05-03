@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Tests scratch
+tests/.venv/
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Document scratch — sample inputs / outputs developers drop
+# in for ad-hoc testing. None of these belong in the repo;
+# fixtures used by tests/test_e2e.py are generated at runtime.
+*.pdf
+*.docx
+*.doc
+*.odt
+*.fodt
+*.ott
+*.rtf
+*.txt
+!tests/**/*.txt
+*.html
+*.xhtml
+*.epub
+*.uot
+*.xlsx
+*.xls
+*.ods
+*.fods
+*.ots
+*.csv
+*.dbf
+*.dif
+*.slk
+*.pptx
+*.ppt
+*.odp
+*.fodp
+*.otp
+*.odg
+*.fodg
+*.otg
+*.svg
+*.emf
+*.wmf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.webp
+*.mml
+*.ps
+*.eps
+*.ltx
+*.tex

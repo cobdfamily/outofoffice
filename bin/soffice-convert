@@ -1,0 +1,78 @@
+#!/bin/sh
+# Thin wrapper around LibreOffice's headless converter that
+# bridges three quirks of soffice / url2code:
+#
+# 1. soffice picks the output filename, not us.
+#    ``soffice --convert-to pdf --outdir D in.docx`` writes
+#    ``D/in.pdf`` -- there's no flag to point it at an exact
+#    output path. url2code, by contrast, hands us a randomized
+#    output PATH per request and expects the tool to produce
+#    that file. Wrapper runs soffice into a per-invocation
+#    temp dir and mvs the result into place.
+#
+# 2. Concurrent soffice processes share the user profile
+#    directory by default, which causes the second invocation
+#    to abort with "Application cannot be started." A per-
+#    invocation ``-env:UserInstallation=file://<tmp>`` keeps
+#    them isolated.
+#
+# 3. soffice writes status / error messages to stderr and
+#    nothing useful to stdout. url2code's text-mode parser
+#    only sees stdout, so without the merge a failed
+#    conversion bubbles up as an opaque non-zero exit. The
+#    ``2>&1`` makes the cause visible.
+#
+# usage:
+#   soffice-convert <input_path> <output_path> <target_format>
+
+set -e
+
+INPUT="$1"
+OUTPUT="$2"
+FORMAT="$3"
+
+if [ -z "$INPUT" ] || [ -z "$OUTPUT" ] || [ -z "$FORMAT" ]; then
+    echo "usage: soffice-convert <input_path> <output_path> <target_format>" >&2
+    exit 64
+fi
+
+if [ ! -f "$INPUT" ]; then
+    echo "input file does not exist: $INPUT" >&2
+    exit 66
+fi
+
+OUTDIR="$(mktemp -d)"
+PROFILE="$(mktemp -d)"
+trap 'rm -rf "$OUTDIR" "$PROFILE"' EXIT
+
+soffice \
+    --headless \
+    --norestore \
+    --nologo \
+    --nofirststartwizard \
+    "-env:UserInstallation=file://$PROFILE" \
+    --convert-to "$FORMAT" \
+    --outdir "$OUTDIR" \
+    "$INPUT" 2>&1
+
+# soffice writes <OUTDIR>/<input_stem>.<format>; the stem is
+# the input filename minus its extension.
+STEM="$(basename "$INPUT")"
+STEM="${STEM%.*}"
+SOFFICE_OUTPUT="$OUTDIR/$STEM.$FORMAT"
+
+if [ ! -f "$SOFFICE_OUTPUT" ]; then
+    echo "soffice produced no output for '$INPUT' -> .$FORMAT (looked at $SOFFICE_OUTPUT)" >&2
+    ls -la "$OUTDIR" >&2 || true
+    exit 1
+fi
+
+# Move into place. Same filesystem in normal use; fall back
+# to copy + remove if the temp dir and output dir are on
+# different mounts (e.g. tmpfs vs persistent volume).
+mv "$SOFFICE_OUTPUT" "$OUTPUT" 2>/dev/null || {
+    cp "$SOFFICE_OUTPUT" "$OUTPUT"
+    rm -f "$SOFFICE_OUTPUT"
+}
+
+echo "wrote $OUTPUT"

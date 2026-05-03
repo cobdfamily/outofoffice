@@ -1,0 +1,1108 @@
+# outofoffice -- LibreOffice document conversion.
+#
+# One route per supported target format, all under /to/<ext>.
+# The shape is uniform across endpoints:
+#
+#   POST /to/<ext>
+#     body:    multipart/form-data, field `document` = the input file
+#     command: soffice-convert <input> <output> <ext>
+#     output:  JSON with `output_files.converted.download_url`
+#
+# The wrapper at /app/bin/soffice-convert handles three soffice
+# quirks (see the wrapper's header comment for the full
+# rationale):
+#
+#   1. soffice picks its own output filename; wrapper renames
+#      to the path url2code generated.
+#   2. Concurrent invocations need per-invocation user-profile
+#      directories.
+#   3. soffice logs to stderr; wrapper merges to stdout so
+#      url2code's text-mode parser surfaces failures.
+#
+# Source format is detected by LibreOffice from the upload's
+# bytes / extension -- no need to declare it in the route.
+# Cross-application conversions (e.g. .docx -> .xlsx) will fail
+# at LibreOffice with a non-zero exit; common-sense applies.
+
+api:
+  title: outofoffice
+  default_root: /
+
+logging:
+  level: INFO
+
+endpoints:
+
+  # ====================================================================
+  # word processing / text
+  # ====================================================================
+
+  - name: to-pdf
+    route: /to/pdf
+    method: POST
+    description: >-
+      Convert an uploaded document to PDF (Portable Document Format) (.pdf).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "pdf"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .pdf
+    output:
+      mode: text
+
+  - name: to-docx
+    route: /to/docx
+    method: POST
+    description: >-
+      Convert an uploaded document to Microsoft Word OOXML (.docx).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "docx"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .docx
+    output:
+      mode: text
+
+  - name: to-doc
+    route: /to/doc
+    method: POST
+    description: >-
+      Convert an uploaded document to Microsoft Word legacy (.doc).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "doc"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .doc
+    output:
+      mode: text
+
+  - name: to-odt
+    route: /to/odt
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Text (.odt).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "odt"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .odt
+    output:
+      mode: text
+
+  - name: to-fodt
+    route: /to/fodt
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Text Flat XML (.fodt).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "fodt"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .fodt
+    output:
+      mode: text
+
+  - name: to-ott
+    route: /to/ott
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Text template (.ott).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "ott"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .ott
+    output:
+      mode: text
+
+  - name: to-rtf
+    route: /to/rtf
+    method: POST
+    description: >-
+      Convert an uploaded document to Rich Text Format (.rtf).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "rtf"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .rtf
+    output:
+      mode: text
+
+  - name: to-txt
+    route: /to/txt
+    method: POST
+    description: >-
+      Convert an uploaded document to Plain text (UTF-8) (.txt).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "txt"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .txt
+    output:
+      mode: text
+
+  - name: to-html
+    route: /to/html
+    method: POST
+    description: >-
+      Convert an uploaded document to HTML (.html).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "html"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .html
+    output:
+      mode: text
+
+  - name: to-xhtml
+    route: /to/xhtml
+    method: POST
+    description: >-
+      Convert an uploaded document to XHTML (.xhtml).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "xhtml"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .xhtml
+    output:
+      mode: text
+
+  - name: to-epub
+    route: /to/epub
+    method: POST
+    description: >-
+      Convert an uploaded document to EPUB (.epub).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "epub"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .epub
+    output:
+      mode: text
+
+  - name: to-uot
+    route: /to/uot
+    method: POST
+    description: >-
+      Convert an uploaded document to Unified Office Format Text (.uot).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "uot"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .uot
+    output:
+      mode: text
+
+  # ====================================================================
+  # spreadsheet
+  # ====================================================================
+
+  - name: to-xlsx
+    route: /to/xlsx
+    method: POST
+    description: >-
+      Convert an uploaded document to Microsoft Excel OOXML (.xlsx).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "xlsx"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .xlsx
+    output:
+      mode: text
+
+  - name: to-xls
+    route: /to/xls
+    method: POST
+    description: >-
+      Convert an uploaded document to Microsoft Excel legacy (.xls).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "xls"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .xls
+    output:
+      mode: text
+
+  - name: to-ods
+    route: /to/ods
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Spreadsheet (.ods).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "ods"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .ods
+    output:
+      mode: text
+
+  - name: to-fods
+    route: /to/fods
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Spreadsheet Flat XML (.fods).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "fods"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .fods
+    output:
+      mode: text
+
+  - name: to-ots
+    route: /to/ots
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Spreadsheet template (.ots).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "ots"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .ots
+    output:
+      mode: text
+
+  - name: to-csv
+    route: /to/csv
+    method: POST
+    description: >-
+      Convert an uploaded document to Comma Separated Values (.csv).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "csv"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .csv
+    output:
+      mode: text
+
+  - name: to-dbf
+    route: /to/dbf
+    method: POST
+    description: >-
+      Convert an uploaded document to dBase database (.dbf).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "dbf"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .dbf
+    output:
+      mode: text
+
+  - name: to-dif
+    route: /to/dif
+    method: POST
+    description: >-
+      Convert an uploaded document to Data Interchange Format (.dif).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "dif"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .dif
+    output:
+      mode: text
+
+  - name: to-slk
+    route: /to/slk
+    method: POST
+    description: >-
+      Convert an uploaded document to SYLK / Symbolic Link (.slk).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "slk"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .slk
+    output:
+      mode: text
+
+  # ====================================================================
+  # presentation
+  # ====================================================================
+
+  - name: to-pptx
+    route: /to/pptx
+    method: POST
+    description: >-
+      Convert an uploaded document to Microsoft PowerPoint OOXML (.pptx).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "pptx"
+      timeout_seconds: 120
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .pptx
+    output:
+      mode: text
+
+  - name: to-ppt
+    route: /to/ppt
+    method: POST
+    description: >-
+      Convert an uploaded document to Microsoft PowerPoint legacy (.ppt).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "ppt"
+      timeout_seconds: 120
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .ppt
+    output:
+      mode: text
+
+  - name: to-odp
+    route: /to/odp
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Presentation (.odp).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "odp"
+      timeout_seconds: 120
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .odp
+    output:
+      mode: text
+
+  - name: to-fodp
+    route: /to/fodp
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Presentation Flat XML (.fodp).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "fodp"
+      timeout_seconds: 120
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .fodp
+    output:
+      mode: text
+
+  - name: to-otp
+    route: /to/otp
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Presentation template (.otp).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "otp"
+      timeout_seconds: 120
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .otp
+    output:
+      mode: text
+
+  # ====================================================================
+  # drawing / vector
+  # ====================================================================
+
+  - name: to-odg
+    route: /to/odg
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Drawing (.odg).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "odg"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .odg
+    output:
+      mode: text
+
+  - name: to-fodg
+    route: /to/fodg
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Drawing Flat XML (.fodg).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "fodg"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .fodg
+    output:
+      mode: text
+
+  - name: to-otg
+    route: /to/otg
+    method: POST
+    description: >-
+      Convert an uploaded document to OpenDocument Drawing template (.otg).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "otg"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .otg
+    output:
+      mode: text
+
+  - name: to-svg
+    route: /to/svg
+    method: POST
+    description: >-
+      Convert an uploaded document to Scalable Vector Graphics (.svg).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "svg"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .svg
+    output:
+      mode: text
+
+  - name: to-emf
+    route: /to/emf
+    method: POST
+    description: >-
+      Convert an uploaded document to Enhanced Metafile (.emf).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "emf"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .emf
+    output:
+      mode: text
+
+  - name: to-wmf
+    route: /to/wmf
+    method: POST
+    description: >-
+      Convert an uploaded document to Windows Metafile (.wmf).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "wmf"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .wmf
+    output:
+      mode: text
+
+  # ====================================================================
+  # raster image
+  # ====================================================================
+
+  - name: to-png
+    route: /to/png
+    method: POST
+    description: >-
+      Convert an uploaded document to Portable Network Graphics (.png).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "png"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .png
+    output:
+      mode: text
+
+  - name: to-jpg
+    route: /to/jpg
+    method: POST
+    description: >-
+      Convert an uploaded document to JPEG (.jpg).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "jpg"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .jpg
+    output:
+      mode: text
+
+  - name: to-gif
+    route: /to/gif
+    method: POST
+    description: >-
+      Convert an uploaded document to GIF (.gif).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "gif"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .gif
+    output:
+      mode: text
+
+  - name: to-bmp
+    route: /to/bmp
+    method: POST
+    description: >-
+      Convert an uploaded document to Bitmap (.bmp).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "bmp"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .bmp
+    output:
+      mode: text
+
+  - name: to-tiff
+    route: /to/tiff
+    method: POST
+    description: >-
+      Convert an uploaded document to Tagged Image File Format (.tiff).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "tiff"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .tiff
+    output:
+      mode: text
+
+  - name: to-webp
+    route: /to/webp
+    method: POST
+    description: >-
+      Convert an uploaded document to WebP (.webp).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "webp"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .webp
+    output:
+      mode: text
+
+  # ====================================================================
+  # markup / other
+  # ====================================================================
+
+  - name: to-mml
+    route: /to/mml
+    method: POST
+    description: >-
+      Convert an uploaded document to MathML (.mml).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "mml"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .mml
+    output:
+      mode: text
+
+  - name: to-ps
+    route: /to/ps
+    method: POST
+    description: >-
+      Convert an uploaded document to PostScript (.ps).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "ps"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .ps
+    output:
+      mode: text
+
+  - name: to-eps
+    route: /to/eps
+    method: POST
+    description: >-
+      Convert an uploaded document to Encapsulated PostScript (.eps).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "eps"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .eps
+    output:
+      mode: text
+
+  - name: to-ltx
+    route: /to/ltx
+    method: POST
+    description: >-
+      Convert an uploaded document to LaTeX (.ltx).
+      Returns a download URL for the converted output.
+    command:
+      executable: /app/bin/soffice-convert
+      args:
+        - "{input_path}"
+        - "{output_path}"
+        - "ltx"
+      timeout_seconds: 60
+    uploads:
+      - field_name: document
+        placeholder: input_path
+        temp_dir: /tmp/outofoffice/uploads
+    output_files:
+      - placeholder: output_path
+        filename_placeholder: output_filename
+        output_dir: /tmp/outofoffice/outputs
+        suffix: .ltx
+    output:
+      mode: text

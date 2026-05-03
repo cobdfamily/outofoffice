@@ -1,0 +1,33 @@
+# Local-dev / production-shape compose for outofoffice.
+#
+# Pulls the published image from kibble by default; override
+# OUTOFOFFICE_TAG to pin a specific version.
+#
+# outofoffice is stateless — uploads and converted outputs
+# live in /tmp/outofoffice (created in the Dockerfile, owned
+# by the unprivileged runtime user). Container restart
+# wipes them; that's intentional.
+#
+# The CI E2E suite at tests/test_e2e.py uses a locally-built
+# image instead — see .github/workflows/test.yml.
+
+services:
+  outofoffice:
+    image: kibble.apps.blindhub.ca/cobdfamily/outofoffice:${OUTOFOFFICE_TAG:-latest}
+    container_name: outofoffice
+    ports:
+      - "${OUTOFOFFICE_HTTP_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/', timeout=2).status==200 else 1)"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      # LibreOffice's first cold-start inside a fresh
+      # container is slow — give the healthcheck headroom
+      # before it starts to fail-open.
+      start_period: 20s
+    restart: unless-stopped
