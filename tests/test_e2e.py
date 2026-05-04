@@ -82,7 +82,7 @@ def test_formats_returns_curated_catalog():
     a list of {ext, name, family} entries. Without it
     consumers can't discover supported extensions without
     reading the README."""
-    r = requests.get(OUTOFOFFICE_BASE_URL + "/formats", timeout=5)
+    r = requests.get(OUTOFOFFICE_BASE_URL + "/v1/formats", timeout=5)
     assert r.status_code == 200, r.text
     body = r.json()
     catalog = body.get("parsed_output")
@@ -108,7 +108,7 @@ def _convert(source: Path, target_format: str) -> requests.Response:
     raw response. Caller asserts on it."""
     with open(source, "rb") as f:
         return requests.post(
-            f"{OUTOFOFFICE_BASE_URL}/to/{target_format}",
+            f"{OUTOFOFFICE_BASE_URL}/v1/to/{target_format}",
             files={"document": ("source.txt", f, "text/plain")},
             timeout=180,  # LibreOffice cold-start is slow
         )
