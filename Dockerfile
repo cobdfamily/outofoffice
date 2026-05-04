@@ -45,11 +45,12 @@ COPY --chown=url2code:url2code config /app/config
 # Wrapper scripts:
 #   bin/soffice-convert     bridges three soffice / url2code
 #                           quirks (see header comment).
-#   bin/cat-yaml-as-json    converts a YAML catalog to JSON
-#                           on stdout for the /formats
-#                           discovery endpoint.
+# cat-yaml-as-json is provided by url2code:>=1.0.7 itself
+# (lives at /app/bin/cat-yaml-as-json in the base layer);
+# this image's bin/ COPY layers on top without clobbering
+# it. Used by the /v1/formats discovery endpoint.
 COPY --chown=url2code:url2code bin /app/bin
-RUN chmod 0755 /app/bin/soffice-convert /app/bin/cat-yaml-as-json
+RUN chmod 0755 /app/bin/soffice-convert
 
 USER url2code
 
