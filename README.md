@@ -2,7 +2,7 @@
 
 [![test](https://github.com/cobdfamily/outofoffice/actions/workflows/test.yml/badge.svg)](https://github.com/cobdfamily/outofoffice/actions/workflows/test.yml)
 
-A simple document conversion API.
+A simple LibreOffice-driven document conversion API.
 
 This is a YAML-defined microservice — no Python source in
 the repo, only tests. The HTTP surface lives in
