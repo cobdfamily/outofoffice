@@ -10,6 +10,18 @@ empty and is filled forward from this point.
 
 ## [Unreleased]
 
+### Changed
+- Base image `1.0.8 -> 2.1.0`, closing the base-pin drift that left
+  outofoffice on the Sprint-1 engine. The async executor (2.0.0) +
+  streamed upload/download I/O (2.1.0) matter most here: large
+  LibreOffice conversions no longer block a worker thread or buffer
+  whole files in memory. Also picks up rate limiting + size caps
+  (1.3.0), the readiness probe + graceful drain (1.4.0), `/metrics`
+  (1.5.0), and OTel tracing (1.6.0). 2.0.0 is a breaking engine
+  release (subprocess timeout/cancellation edge-cases may shift) —
+  outofoffice's per-endpoint converter timeouts make this worth
+  certifying against the e2e suite before tagging.
+
 ## [1.1.0] - 2026-06-01
 
 ### Added
