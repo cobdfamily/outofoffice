@@ -9,7 +9,7 @@
 # returns JSON containing a download URL for the converted
 # output -- url2code's built-in output_files mechanism.
 
-ARG URL2CODE_TAG=latest
+ARG URL2CODE_TAG=1.0.8
 FROM kibble.apps.blindhub.ca/cobdfamily/url2code:${URL2CODE_TAG}
 
 USER root

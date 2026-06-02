@@ -33,6 +33,7 @@
 
 api:
   title: outofoffice
+  version: "1.0.0"
   # API surface lives under /v1/. Liveness ``/`` and the
   # OpenAPI docs ``/docs`` / ``/redocs`` stay at the root.
   # Future breaking changes ship at /v2/ without disturbing
