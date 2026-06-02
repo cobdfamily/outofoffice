@@ -10,6 +10,8 @@ empty and is filled forward from this point.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-01
+
 ### Changed
 - Base image `1.0.8 -> 2.1.0`, closing the base-pin drift that left
   outofoffice on the Sprint-1 engine. The async executor (2.0.0) +
@@ -19,8 +21,9 @@ empty and is filled forward from this point.
   (1.3.0), the readiness probe + graceful drain (1.4.0), `/metrics`
   (1.5.0), and OTel tracing (1.6.0). 2.0.0 is a breaking engine
   release (subprocess timeout/cancellation edge-cases may shift) —
-  outofoffice's per-endpoint converter timeouts make this worth
-  certifying against the e2e suite before tagging.
+  outofoffice's per-endpoint converter timeouts were certified
+  against the e2e suite (CI).
+- `api.version` `1.1.0 -> 1.1.1`.
 
 ## [1.1.0] - 2026-06-01
 
@@ -60,5 +63,6 @@ surface plus this sprint's standardization work.
   `cap_drop: ALL`, `no-new-privileges`, and `HOME=/tmp` so
   LibreOffice's caches stay on the writable tmpfs (Sprint 4).
 
+[1.1.1]: https://github.com/cobdfamily/outofoffice/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/cobdfamily/outofoffice/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/cobdfamily/outofoffice/commits/v1.0.0
