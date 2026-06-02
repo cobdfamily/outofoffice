@@ -31,3 +31,23 @@ services:
       # before it starts to fail-open.
       start_period: 20s
     restart: unless-stopped
+    environment:
+      # LibreOffice scatters caches under $HOME. With a
+      # read-only root, point HOME at the writable tmpfs so
+      # soffice's stray fontconfig / cache writes land there.
+      # (The per-invocation -env:UserInstallation profile in
+      # bin/soffice-convert already uses mktemp -d under /tmp.)
+      HOME: /tmp
+    # Container hardening (fleet standard, matches needle):
+    # read-only root, dropped capabilities, no privilege
+    # escalation. soffice-convert writes its output + profile
+    # dirs via mktemp -d (under /tmp), and url2code mkdir -p's
+    # /tmp/outofoffice/* per request, so /tmp is a writable
+    # tmpfs rather than the read-only root.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
