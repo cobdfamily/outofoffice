@@ -10,6 +10,22 @@ empty and is filled forward from this point.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-01
+
+### Added
+- **PDF/A archival output.** `POST /to/pdf` accepts `pdfa=yes`,
+  which makes the `soffice-convert` wrapper render via
+  LibreOffice's `writer_pdf_Export` FilterData with
+  `SelectPdfVersion=1` (PDF/A-1b) — a self-contained, validator-
+  friendly archival PDF — instead of a plain PDF. Default
+  (omitted / `pdfa=no`) is unchanged. New e2e test asserts the
+  `pdfaid` XMP marker. First of the "export profile" knobs;
+  JPEG quality / raster DPI remain follow-ups (DPI needs
+  pixel-dimension math, not a direct LibreOffice option).
+
+### Changed
+- `api.version` `1.0.0 -> 1.1.0`.
+
 ## [1.0.0] - 2026-06-01
 
 First tagged release of outofoffice. Captures the existing
@@ -32,4 +48,5 @@ surface plus this sprint's standardization work.
   `cap_drop: ALL`, `no-new-privileges`, and `HOME=/tmp` so
   LibreOffice's caches stay on the writable tmpfs (Sprint 4).
 
+[1.1.0]: https://github.com/cobdfamily/outofoffice/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/cobdfamily/outofoffice/commits/v1.0.0

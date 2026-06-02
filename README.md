@@ -118,10 +118,13 @@ headlessly. Each request:
   responsibility.
 - **No format negotiation**. The route picks the target;
   the source is whatever LibreOffice can open.
-- **Not a quality knob**. PDF export uses LibreOffice's
-  defaults. Operators with bespoke export options should
-  build a downstream image that ships their own
-  `soffice-convert` wrapper.
+- **Few export knobs (so far)**. PDF export accepts
+  `pdfa=yes` for an archival **PDF/A-1b** file; otherwise
+  conversions use LibreOffice's defaults. Other bespoke
+  export options (JPEG quality, raster pixel dimensions,
+  etc.) aren't exposed yet — operators needing them can
+  build a downstream image with their own `soffice-convert`
+  wrapper.
 
 ## Files
 

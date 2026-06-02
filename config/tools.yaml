@@ -33,7 +33,7 @@
 
 api:
   title: outofoffice
-  version: "1.0.0"
+  version: "1.1.0"
   # API surface lives under /v1/. Liveness ``/`` and the
   # OpenAPI docs ``/docs`` / ``/redocs`` stay at the root.
   # Future breaking changes ship at /v2/ without disturbing
@@ -78,7 +78,8 @@ endpoints:
     method: POST
     description: >-
       Convert an uploaded document to PDF (Portable Document Format) (.pdf).
-      Returns a download URL for the converted output.
+      Returns a download URL for the converted output. Pass
+      `pdfa=yes` for an archival PDF/A-1b file.
     command:
       executable: /app/bin/soffice-convert
       args:
@@ -86,6 +87,17 @@ endpoints:
         - "{output_path}"
         - "pdf"
       timeout_seconds: 60
+    request:
+      flags:
+        # Optional export profile. yes -> PDF/A-1b (archival,
+        # self-contained, validator-friendly); default plain PDF.
+        # The wrapper turns this into LibreOffice's writer_pdf_Export
+        # FilterData; it's the only profile knob today.
+        - name: pdfa
+          flag: --pdfa
+          valuePrefix: ""
+          type: enum
+          choices: ["yes", "no"]
     uploads:
       - field_name: document
         placeholder: input_path

@@ -103,13 +103,17 @@ def test_formats_returns_curated_catalog():
 # ---------------------------------------------------------------------------
 
 
-def _convert(source: Path, target_format: str) -> requests.Response:
+def _convert(
+    source: Path, target_format: str, data: dict | None = None,
+) -> requests.Response:
     """POST the source to /to/<target_format> and return the
-    raw response. Caller asserts on it."""
+    raw response. Optional `data` carries extra form fields
+    (e.g. export-profile flags). Caller asserts on it."""
     with open(source, "rb") as f:
         return requests.post(
             f"{OUTOFOFFICE_BASE_URL}/v1/to/{target_format}",
             files={"document": ("source.txt", f, "text/plain")},
+            data=data or {},
             timeout=180,  # LibreOffice cold-start is slow
         )
 
@@ -150,6 +154,21 @@ def test_convert_to_pdf(source_text):
     assert len(converted) > 100, "PDF suspiciously small"
     assert converted.startswith(b"%PDF-"), \
         f"not a PDF (first bytes: {converted[:8]!r})"
+
+
+def test_convert_to_pdfa(source_text):
+    """``txt -> pdf`` with ``pdfa=yes`` -> a PDF/A-1b archival
+    file. LibreOffice embeds a pdfaid XMP packet, so the bytes
+    carry the ``pdfaid`` marker on top of the %PDF magic."""
+    r = _convert(source_text, "pdf", data={"pdfa": "yes"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("exit_code") == 0, body
+    converted = _download(r)
+    assert converted.startswith(b"%PDF-"), \
+        f"not a PDF (first bytes: {converted[:8]!r})"
+    assert b"pdfaid" in converted, \
+        "no pdfaid XMP marker -- PDF/A profile was not applied"
 
 
 def test_convert_to_html(source_text):

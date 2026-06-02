@@ -41,6 +41,29 @@ if [ ! -f "$INPUT" ]; then
     exit 66
 fi
 
+# Optional export-profile flags, appended by url2code after the
+# three positional args. Currently: --pdfa <yes|no> (PDF target
+# only). Unknown flags are ignored so the wrapper stays forgiving
+# as more profiles are added.
+shift 3 || true
+PDFA="no"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --pdfa) PDFA="${2:-no}"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+# By default the conversion target is just the format (e.g. "pdf").
+# For PDF/A, swap in LibreOffice's writer_pdf_Export FilterData:
+# SelectPdfVersion=1 -> PDF/A-1b (the archival profile), which
+# makes soffice embed a pdfaid XMP packet. $FORMAT stays "pdf" so
+# the output-stem math below is unaffected.
+CONVERT_TARGET="$FORMAT"
+if [ "$FORMAT" = "pdf" ] && [ "$PDFA" = "yes" ]; then
+    CONVERT_TARGET='pdf:writer_pdf_Export:{"SelectPdfVersion":{"type":"long","value":"1"}}'
+fi
+
 OUTDIR="$(mktemp -d)"
 PROFILE="$(mktemp -d)"
 trap 'rm -rf "$OUTDIR" "$PROFILE"' EXIT
@@ -51,7 +74,7 @@ soffice \
     --nologo \
     --nofirststartwizard \
     "-env:UserInstallation=file://$PROFILE" \
-    --convert-to "$FORMAT" \
+    --convert-to "$CONVERT_TARGET" \
     --outdir "$OUTDIR" \
     "$INPUT" 2>&1
 
